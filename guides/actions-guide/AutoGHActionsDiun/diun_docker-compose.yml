@@ -1,0 +1,15 @@
+#docker-compose.yml
+version: "3"
+services:
+  diun:
+    restart: always
+    image: crazymax/diun:latest
+    volumes:
+      - "/opt/docker/diun/data:/data"
+      - "/opt/docker/diun/scripts:/scripts:ro"
+      - "/opt/docker/diun/diun.yml:/config.yml:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - "TZ=America/New_York"
+      - "LOG_LEVEL=info"
+      - "LOG_JSON=false"

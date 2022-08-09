@@ -1,0 +1,94 @@
+### This section defines the action ###
+
+# Name of the action
+name: Caddy
+
+on:
+  # Allows you to set off the action via a POST request to the GitHub workflow API
+  repository_dispatch:
+    types: caddy 
+  # Allows you to manually run the action from inside the Actions tab of the repo
+  workflow_dispatch: 
+
+# See https://docs.github.com/en/actions/using-workflows/triggering-a-workflow for more options
+
+### This section defines the job steps for the action ###
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # ---
+      # BINARY BUILD / RELEASE
+      # ---
+      # Setup Go
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: '^1.16'
+      # Get xcaddy go module
+      - name: Get XCADDY
+        run: |
+          go version
+          go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+      # Check out local repo
+      - name: Pull Local Repo
+        uses: actions/checkout@v2
+      # Build Binaries and set them to executable
+      - name: Build Binaries
+        run: |
+          sh ./scripts/caddybuild.sh
+          sh ./scripts/caddybuild-win64.sh
+          chmod +x caddy
+      # Get the new version of the binary package
+      - name: Get Binary Version
+        id: caddy_version
+        run: |
+          CADDY=$(./caddy version)
+          vr="${CADDY}"
+          echo "::set-output name=version::$( echo $vr | head -n1 | cut -d " " -f1 )"
+          echo "::set-output name=tag_name::$( echo $vr | head -n1 | cut -d " " -f1 )"
+      # Create release in repository and attach binaries
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ steps.caddy_version.outputs.tag_name }}"
+          name: Binary Update - Caddy ${{ steps.caddy_version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            Release notes: ${{ steps.get_release_notes.outputs.html_url }}
+          files: |
+            caddy
+            caddy.exe
+      # ---
+      # DOCKER SECTION
+      # ---
+      # Login to Docker Hub using repo secrets
+      - uses: actions/checkout@v2
+      - name: Docker Hub Login
+        id: login_docker
+        if: always()
+        run: |
+          echo ${{ secrets.DOCKER_HUB_PW }} | docker login -u ${{ secrets.DOCKER_HUB_USR }} --password-stdin
+      # Build docker image using the Dockerfile
+      - name: Build Docker Image
+        id: build_docker
+        if: success()
+        run: |
+          docker build -f ./Dockerfile -t ${{ secrets.DOCKER_HUB_USR }}/caddy:latest .
+      # Push docker container to Docker Hub
+      - name: Push Docker Image
+        id: push_docker
+        if: success()
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USR }}/caddy:latest
+      # Deploy Docker Image update to Cloud VM
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.LINODEhost }}
+          username: ${{ secrets.LINODEuser }}
+          key: ${{ secrets.LINODEkey }}
+          port: 22
+          script:
+            cd ~/caddy && docker compose down && docker compose pull && docker compose up -d

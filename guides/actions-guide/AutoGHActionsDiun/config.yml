@@ -1,0 +1,15 @@
+#config.yml
+watch:
+  workers: 1
+  schedule: "0 */6 * * *"
+providers:
+  file:
+    filename: /data/images.yml
+notif:
+# Enable this if you would like to post update notifications to a discord channel via a webhook.
+#  discord:
+#    webhookURL: <https://discordwebhookurl.com>
+#    timeout: 10s
+  script:
+    cmd: "sh"
+    args: "/scripts/caddy.sh"

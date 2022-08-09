@@ -1,0 +1,38 @@
+### This section defines the action ###
+
+# Name of the action
+name: Caddy
+
+on:
+  # Allows you to set off the action via a POST request to the GitHub workflow API
+  repository_dispatch:
+    types: caddy 
+  # Allows you to manually run the action from inside the Actions tab of the repo
+  workflow_dispatch: 
+
+# See https://docs.github.com/en/actions/using-workflows/triggering-a-workflow for more options
+
+### This section defines the job steps for the action ###
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Login to Docker Hub using repo secrets
+      - name: Docker Hub Login
+        id: login_docker
+        if: always()
+        run: |
+          echo ${{ secrets.DOCKER_HUB_PW }} | docker login -u ${{ secrets.DOCKER_HUB_USR }} --password-stdin
+      # Build docker image using the Dockerfile
+      - name: Build Docker Image
+        id: build_docker
+        if: success()
+        run: |
+          docker build -f ./Dockerfile -t ${{ secrets.DOCKER_HUB_USR }}/caddy:latest .
+      # Push docker container to Docker Hub
+      - name: Push Docker Image
+        id: push_docker
+        if: success()
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USR }}/caddy:latest

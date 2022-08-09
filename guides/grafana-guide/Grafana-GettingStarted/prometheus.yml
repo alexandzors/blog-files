@@ -1,0 +1,9 @@
+# Set global scrape interval (how long between prometheus data scrapes on exporters)
+global:
+  scrape_interval: 15s
+
+# Define the scrape job(s)
+scrape_configs:
+- job_name: node
+  static_configs:
+  - targets: ['<your-machine-ip>:9100']

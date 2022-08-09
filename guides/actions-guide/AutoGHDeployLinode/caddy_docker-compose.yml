@@ -1,0 +1,17 @@
+version: '3.6'
+services:
+  caddy:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "1"
+    image: <username>/caddy
+    ports:
+        - 80:80
+        - 443:443
+    volumes:
+        - ~/caddy/config/Caddyfile:/etc/caddy/Caddyfile:ro
+        - ~/caddy/config:/config
+        - ~/caddy/data:/data

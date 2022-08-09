@@ -1,0 +1,23 @@
+#!/bin/bash
+# add to /sbin/ and make executable
+# edit /etc/pam.d/sshd and add:
+# session   optional   pam_exec.so /sbin/sshd-login
+# to bottom of the file
+
+WEBHOOK_URL=""
+DISCORDUSER=""
+
+# Capture only open and close sessions.
+case "$PAM_TYPE" in
+    open_session)
+        PAYLOAD=" { \"content\": \"$DISCORDUSER: User \`$PAM_USER\` logged in to \`$HOSTNAME\` (remote host: $PAM_RHOST).\" }"
+        ;;
+    close_session)
+        PAYLOAD=" { \"content\": \"$DISCORDUSER: User \`$PAM_USER\` logged out of \`$HOSTNAME\` (remote host: $PAM_RHOST).\" }"
+        ;;
+esac
+
+# If payload exists fire webhook
+if [ -n "$PAYLOAD" ] ; then
+    curl -X POST -H 'Content-Type: application/json' -d "$PAYLOAD" "$WEBHOOK_URL"
+fi
