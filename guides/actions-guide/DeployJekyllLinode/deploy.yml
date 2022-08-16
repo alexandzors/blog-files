@@ -1,0 +1,117 @@
+# Required Repo Secrets:
+# LINODEFINGERPRINT = ssh host fingerprint  
+# LINODEHOST = hostname/wan ip of the VM  
+# LINODEUSER = username actions needs for login  
+# LINODESSHKEY = ssh private key for above user  
+# Optional Secrets:
+# DISCORD_WEBHOOK = text channel webhook url. Only needed if you use the notify job.
+
+name: 'Deploy Blog'
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - .gitignore
+      - README.md
+      - LICENSE
+  workflow_dispatch:
+
+jobs:
+  # build and create the jekyll blog artifact
+  # include 'skip ci' in commit message to not run this workflow
+  build:
+    if: "github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # for posts's lastmod
+      - name: setup ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+      - name: build production
+        env:
+          _config: _config.yml
+          _baseurl: 
+        run: JEKYLL_ENV=production bundle exec jekyll b --incremental
+      - name: copy required files
+        run: |
+          cp -r _data _site/data
+          cp -r _plugins _site/plugins
+          cp -r _tabs _site/tabs
+          cp _config.yml _site/config.yml
+      - name: upload blog
+        uses: actions/upload-artifact@v3
+        with:
+          path: _site/*
+          retention-days: 1
+
+  # grab the build artifact and test it using htmlproofer
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: download blog
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: _site/
+      - name: test production site
+        uses: chabad360/htmlproofer@master
+        with:
+          directory: "_site/"
+          arguments: --disable-external --check-html --allow_hash_href=true
+
+  # grab artifact if test job is successful and deploy it using rsync
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: download blog artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: _site/
+      - name:
+        run: |
+          mkdir ~/.ssh
+          touch ~/.ssh/known_hosts
+          echo ${{ secrets.LINODEFINGERPRINT }} >> ~/.ssh/known_hosts
+      - name: deploy blog
+        uses: burnett01/rsync-deployments@5.2.1
+        with:
+          switches: -avr
+          path: _site/
+          remote_path: /opt/sites/blog/
+          remote_host: ${{ secrets.LINODEHOST }}
+          remote_port: 22
+          remote_user: ${{ secrets.LINODEUSER }}
+          remote_key: ${{ secrets.LINODESSHKEY }}
+
+  # use nobrayner/discord-webhook action to notify status. 
+  # delete this job if you do not want to use it.
+  notify:
+    name: notify
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - test
+      - deploy
+    if: ${{ always() }}
+    steps:
+      - name: send notif discord
+        uses: nobrayner/discord-webhook@v1
+        with:
+          github-token: ${{ secrets.github_token }}
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          include-details: 'true'
+          color-success: '#7ED321'
+          color-failure: '#D0021B'
+          color-cancelled: '#9013FE'
+          avatar-url: 'https://octodex.github.com/images/Terracottocat_Single.png'
+          title: '${{ github.workflow }}'
+          description: '${{ github.workflow }} was triggered. It returned status: {{STATUS}}'

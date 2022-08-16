@@ -1,0 +1,17 @@
+# trigger workflow to run after listed workflows are run
+name: 'Delete Old Artifacts'
+on:
+  workflow_run:
+    workflows: [Deploy Blog, Deploy Blog (DEV)]
+    types:
+      - completed
+
+# delete all leftover artifacts since GitHub's lowest retention time period is 24 hours
+jobs:
+  delete-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: kolpav/purge-artifacts-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          expire-in: 0 # Setting this to 0 will delete all artifacts

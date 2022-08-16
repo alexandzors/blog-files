@@ -1,0 +1,35 @@
+{
+        email email@email.com
+#       acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+        debug
+        log {
+                output file /var/log/caddy/caddy.log {
+                        roll_size 12mb
+                        roll_keep 10
+                        roll_keep_for 24h
+                }
+                format json {
+                        message_key msg
+                        level_key debug
+                        time_key ts
+                        name_key name
+                        time_format wall
+                }
+        }
+}
+
+(tls) {
+        tls {
+                dns cloudflare {env.CF_API_KEY}
+        }
+}
+
+blog.alexsguardian.net {
+        import tls
+        root * /opt/sites/blog/
+        file_server
+        handle_errors {
+                rewrite * /404.html
+                file_server
+        }
+}
