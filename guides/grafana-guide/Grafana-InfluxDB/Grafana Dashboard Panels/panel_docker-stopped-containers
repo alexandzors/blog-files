@@ -1,0 +1,76 @@
+## FLUX QUERY
+
+from(bucket: "telegraf")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r["_measurement"] == "docker")
+  |> filter(fn: (r) => r["_field"] == "n_containers_running")
+  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)
+  |> yield(name: "mean")
+
+## PANEL OPTIONS
+
+Type: Stat
+Graph Mode: None
+Base Color: Red
+
+## PANEL JSON
+
+{
+  "id": 6,
+  "gridPos": {
+    "h": 3,
+    "w": 4,
+    "x": 4,
+    "y": 0
+  },
+  "type": "stat",
+  "title": "# of Stopped Containers",
+  "datasource": {
+    "uid": "6EeXWM7Vz",
+    "type": "influxdb"
+  },
+  "pluginVersion": "9.0.4",
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "dark-red",
+            "value": null
+          }
+        ]
+      },
+      "color": {
+        "mode": "thresholds"
+      }
+    },
+    "overrides": []
+  },
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": ""
+    },
+    "orientation": "auto",
+    "textMode": "auto",
+    "colorMode": "value",
+    "graphMode": "none",
+    "justifyMode": "auto"
+  },
+  "targets": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "6EeXWM7Vz"
+      },
+      "query": "from(bucket: \"telegraf\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"n_containers_stopped\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
+      "refId": "A"
+    }
+  ]
+}
+

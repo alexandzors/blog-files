@@ -1,0 +1,18 @@
+# Please run the create network command in the InfluxDB compose file before starting this container
+version: '3'
+services:
+  telegraf:
+    restart: unless-stopped
+    image: telegraf:1.24-alpine
+    user: telegraf:999
+    networks:
+      db:
+    env_file: .env
+    volumes:
+      - /opt/docker/influx/agents/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  db:
+    external:
+      name: influxdb-net

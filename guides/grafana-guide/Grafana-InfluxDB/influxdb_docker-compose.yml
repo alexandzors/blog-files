@@ -1,0 +1,21 @@
+# Please run the following command before starting this container.
+# docker network create --driver bridge influxdb-net
+version: '3'
+services:
+  influxdb:
+    restart: unless-stopped
+    image: influxdb:2.3.0-alpine
+    networks:
+      db:
+    command:
+      - '--reporting-disabled'
+    volumes:
+      - /opt/docker/influx/data:/var/lib/influxdb2
+      - /opt/docker/influx/config.yml:/etc/influxdb2/config.yml
+    ports:
+      - 3086:8086
+
+networks:
+  db:
+    external:
+      name: influxdb-net

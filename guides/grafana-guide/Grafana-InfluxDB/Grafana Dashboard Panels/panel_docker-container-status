@@ -1,0 +1,168 @@
+## FLUX QUERY
+from(bucket: "telegraf")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r["_measurement"] == "docker_container_status")
+  |> filter(fn: (r) => r["_field"] == "uptime_ns")
+  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)
+  |> yield(name: "mean")
+
+## PANEL SETTINGS
+
+Type: Table
+Title: Status
+Override 1:
+- Fields with Name "Status"
+    - Value mappings:
+        - running > color:green
+        - stopped > color:red
+    - Cell display mode:
+        - Color Background (solid)
+
+## TRANSFORM SETTINGS
+
+Reduce:
+ - Mode: Series to rows
+ - Calculations: Total
+ - Labels to fields: enabled
+
+Organize fields:
+ - container_name: Container
+ - container_status: Status
+ - ALL OTHER FIELDS HIDDEN
+
+## PANEL JSON
+
+{
+  "id": 7,
+  "gridPos": {
+    "h": 7,
+    "w": 12,
+    "x": 0,
+    "y": 3
+  },
+  "type": "table",
+  "title": "Status",
+  "datasource": {
+    "uid": "6EeXWM7Vz",
+    "type": "influxdb"
+  },
+  "pluginVersion": "9.0.4",
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "align": "auto",
+        "displayMode": "auto",
+        "inspect": false,
+        "filterable": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "dark-green",
+            "value": null
+          }
+        ]
+      },
+      "color": {
+        "mode": "thresholds"
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Status"
+        },
+        "properties": [
+          {
+            "id": "mappings",
+            "value": [
+              {
+                "type": "value",
+                "options": {
+                  "running": {
+                    "color": "dark-green",
+                    "index": 0
+                  },
+                  "stopped": {
+                    "color": "dark-red",
+                    "index": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "custom.displayMode",
+            "value": "color-background-solid"
+          }
+        ]
+      }
+    ]
+  },
+  "options": {
+    "showHeader": true,
+    "footer": {
+      "show": false,
+      "reducer": [
+        "sum"
+      ],
+      "fields": "",
+      "enablePagination": false
+    },
+    "frameIndex": 0
+  },
+  "targets": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "6EeXWM7Vz"
+      },
+      "query": "from(bucket: \"telegraf\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"docker_container_status\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"uptime_ns\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> yield(name: \"mean\")",
+      "refId": "A"
+    }
+  ],
+  "transformations": [
+    {
+      "id": "reduce",
+      "options": {
+        "reducers": [
+          "sum"
+        ],
+        "labelsToFields": true
+      }
+    },
+    {
+      "id": "organize",
+      "options": {
+        "excludeByName": {
+          "Field": true,
+          "com.docker.compose.config-hash": true,
+          "com.docker.compose.container-number": true,
+          "com.docker.compose.image": true,
+          "com.docker.compose.oneoff": true,
+          "com.docker.compose.project": true,
+          "com.docker.compose.project.config_files": true,
+          "com.docker.compose.project.working_dir": true,
+          "com.docker.compose.service": true,
+          "com.docker.compose.version": true,
+          "container_image": true,
+          "container_version": true,
+          "engine_host": true,
+          "host": true,
+          "server_version": true,
+          "maintainer": true,
+          "Total": true
+        },
+        "indexByName": {},
+        "renameByName": {
+          "Field": "",
+          "container_name": "Container",
+          "container_status": "Status"
+        }
+      }
+    }
+  ]
+}

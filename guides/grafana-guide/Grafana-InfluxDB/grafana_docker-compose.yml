@@ -1,0 +1,24 @@
+# This compose file replaces the one in the Grafana-GettingStarted directory.
+# Please run the create network command in the InfluxDB compose file before starting this container
+version: '3'
+services:
+  grafana:
+    restart: unless-stopped
+    image: grafana/grafana-oss:latest
+    user: "1000"
+    networks:
+      db:
+    volumes:
+      - /opt/docker/grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+    environment:
+#     Temporary Password for the default grafana user account
+      - "GF_SECURITY_ADMIN_PASSWORD=admin"
+#     List of plugins to install when the container is deployed. Pulled from Grafana's plugin repository.
+      - "GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel"
+
+networks:
+  db:
+    external:
+      name: influxdb-net
