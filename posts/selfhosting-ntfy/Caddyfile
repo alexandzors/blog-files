@@ -1,0 +1,17 @@
+notify.yourdomain.com, http://notify.yourdomain.com {
+	import tls
+	log {
+		output file /config/logs/notify.log {
+			roll_size 10mb
+			roll_keep 5
+			roll_keep_for 24h
+		}
+	}
+	reverse_proxy ntfy-server-1
+	@httpget {
+		protocol http
+		method GET
+		path_regexp ^/([-_a-z0-9]{0,64}$|docs/|static/)
+	}
+	redir @httpget https://{host}{uri}
+}

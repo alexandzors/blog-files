@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# User access token and url to post notification messages
+NTFYTOKEN=
+NTFYURL=
+
+# If session was opened then post this message with priority level 5
+if [ "${PAM_TYPE}" = "open_session" ]; then
+  curl -H "Title: ${HOSTNAME} -- ssh login" \
+ -u :$NTFYTOKEN \
+ -H "Priority: 5" \
+ -H "X-Tags: warning" \
+ -d "user: ${PAM_USER}
+ip/host: ${PAM_RHOST}" \
+ $NTFYURL
+fi
+
+# If session was closed then post this message with priority level 1
+if [ "${PAM_TYPE}" = "close_session" ]; then
+  curl -H "Title: ${HOSTNAME} -- ssh logout" \
+ -u :$NTFYTOKEN \
+ -H "Priority: 1" \
+ -d "user: ${PAM_USER}
+ip/host: ${PAM_RHOST}" \
+ $NTFYURL
+fi
