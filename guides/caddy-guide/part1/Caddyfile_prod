@@ -1,0 +1,26 @@
+# Global Config
+{
+	email certs@universelab.net
+	default_sni universelab.net
+	acme_ca https://acme-v02.api.letsencrypt.org/directory
+	admin localhost:2019
+	# debug
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# Global Reusable Blocks
+(trusted_proxies) {
+	import ./configs/cloudflare-proxies
+}
+(tls) {
+	import ./configs/cloudflare-tls
+}
+(cf-client-ip) {
+	import ./configs/cloudflare-clientip-map
+}
+
+# Web Config
+universelab.net {
+  import tls
+  respond "I'm Alive!"
+}

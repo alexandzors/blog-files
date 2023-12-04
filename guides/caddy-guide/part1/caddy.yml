@@ -1,0 +1,20 @@
+version: '3'
+services:
+  server:
+    restart: always
+    networks:
+      - cf
+    image: alexandzors/caddy
+    env_file: .env
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ${PWD}/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${PWD}/.data:/data
+      - ${PWD}/configs:/etc/caddy/configs:ro
+
+networks:
+  cf:
+    name: cf-internal-net
+    external: true

@@ -1,0 +1,14 @@
+version: '3'
+services:
+ tunnel:
+    restart: always
+    networks:
+      - cf
+    image: cloudflare/cloudflared:latest
+    command: 'tunnel -no-autoupdate run --token ${TOKEN}'
+    env_file: .env
+
+networks:
+  cf:
+    name: cf-internal-net
+    external: true
