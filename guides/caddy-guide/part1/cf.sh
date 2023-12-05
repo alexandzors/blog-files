@@ -1,26 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env sh
 # This script queries cloudflare's website and pulls the list of IPv4 addresses. They are then loaded into a file to be used by Caddy.
 # These IPs can be used for setting up trusted proxy configurations in web servers.
 # Original file creator: https://caddy.community/t/trusted-proxies-with-cloudflare-my-solution/16124
+# Updated by https://github.com/calvinhenderson to be more "succinct" as he put it. :)
 
-CLOUDFLARE_IPSV4="https://www.cloudflare.com/ips-v4"
 FILE_IPV4="./configs/cloudflare-proxies"
+tmp_file="/var/tmp/cloudflare-ips-v4-$(date +%Y%m%d_%H%M%S)"
 
-if [ -f "$FILE_IPV4" ] ; then
-  rm "$FILE_IPV4"
-fi
+# Make sure curl exists
+command -v curl >/dev/null || { echo "Command 'curl' was not found. Is it in the PATH?"; exit 1; }
 
-if [ -f /usr/bin/curl ]; then
-  HTTP_STATUS=$(curl -sw '%{http_code}' -o $FILE_IPV4 $CLOUDFLARE_IPSV4)
-  if [ "$HTTP_STATUS" -ne 200 ]; then
-    echo "FAILED. Reason: unable to download IPv4 list [Status code: $HTTP_STATUS]"
-    exit 1
-  fi
-else
-  echo "FAILED. Reason: curl wasn't found on this system."
-  exit 1
-fi
+# Fetch the IP list from Cloudflare
+curl -fso "$tmp_file" "https://www.cloudflare.com/ips-v4"
+[ $? -eq 0 ] || { echo "Failed to fetch IPv4 list."; exit 1; }
 
-sed -i ':a;N;$!ba;s/\n/ /g' $FILE_IPV4
-sed -i '1s/^/trusted_proxies /' $FILE_IPV4
-exit 0
+# Transform the downloaded list into a format Caddy can understand
+awk -v d=" " '{s=(NR==1?s:s d)$0}END{print "trusted_proxies "s}' "$tmp_file" > "$FILE_IPV4"
