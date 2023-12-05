@@ -16,3 +16,6 @@ curl -fso "$tmp_file" "https://www.cloudflare.com/ips-v4"
 
 # Transform the downloaded list into a format Caddy can understand
 awk -v d=" " '{s=(NR==1?s:s d)$0}END{print "trusted_proxies "s}' "$tmp_file" > "$FILE_IPV4"
+
+# Clean up
+rm -f "$tmp_file"
